@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - StreamDJ</title>
+  
+  <!-- Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Login Stylesheet -->
+  <link rel="stylesheet" href="/css/login.css">
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-card">
+      <div class="logo">
+        <h1>StreamDJ</h1>
+        <p>Sign in to access the control panel</p>
+      </div>
+
+      <% if (typeof error !== 'undefined' && error) { %>
+        <div class="error-message"><%= error %></div>
+      <% } %>
+
+      <form method="POST" action="/login">
+        <% if (typeof requireUsername !== 'undefined' && requireUsername) { %>
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" name="username" placeholder="Enter your username" required autofocus autocomplete="username">
+        </div>
+        <% } %>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" placeholder="Enter your password" required <%= (typeof requireUsername === 'undefined' || !requireUsername) ? 'autofocus' : '' %> autocomplete="current-password">
+        </div>
+
+        <button type="submit" class="btn">Sign In</button>
+      </form>
+
+      <p class="footer-text">
+        Credentials are set in your <code>.env</code> file
+      </p>
+    </div>
+  </div>
+</body>
+</html>

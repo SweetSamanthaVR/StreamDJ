@@ -1,0 +1,30 @@
+{
+  "font": {
+    "color": "#FFFFFF",
+    "opacity": 1,
+    "size": 48,
+    "lineSpacing": 12,
+    "letterSpacing": 0
+  },
+  "box": {
+    "enabled": true,
+    "color": "#000000",
+    "opacity": 0.45,
+    "borderWidth": 20
+  },
+  "layout": {
+    "horizontal": "right",
+    "vertical": "bottom",
+    "offsetX": 40,
+    "offsetY": 40
+  },
+  "labels": {
+    "showHeader": false,
+    "headerText": "",
+    "titlePrefix": "",
+    "artistPrefix": "Artist: ",
+    "albumPrefix": "Album: ",
+    "showAlbum": true,
+    "commentPrefix": ""
+  }
+}

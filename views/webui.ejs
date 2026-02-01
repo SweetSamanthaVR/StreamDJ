@@ -1,0 +1,641 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  
+  <!-- Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="/css/webui.css">
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <aside role="navigation" aria-label="Main navigation">
+    <div class="logo">
+      StreamDJ Control
+    </div>
+    <ul class="nav-links" role="menu">
+      <li class="nav-item" role="none"><a href="#dashboard" class="nav-link active" data-page="dashboard" role="menuitem" aria-label="Dashboard page">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+        Dashboard
+      </a></li>
+      <li class="nav-item" role="none"><a href="#overlay" class="nav-link" data-page="overlay" role="menuitem" aria-label="Overlay Settings page">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path></svg>
+        Overlay Settings
+      </a></li>
+      <li class="nav-item" role="none"><a href="#technical" class="nav-link" data-page="technical" role="menuitem" aria-label="Technical diagnostics page">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+        Technical
+      </a></li>
+    </ul>
+  </aside>
+
+  <main role="main">
+    <!-- Top Header -->
+    <header role="banner">
+      <div style="font-weight: 500; color: var(--text-secondary);">Mission Control</div>
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <div class="status-badge status-warning" id="status-badge" role="status" aria-live="polite" aria-label="System status">
+          <span class="status-dot" id="status-dot" style="width: 8px; height: 8px; border-radius: 50%; background: currentColor;" aria-hidden="true"></span>
+          <span id="status-text" style="margin-left: 6px">Offline</span>
+        </div>
+        <% if (typeof authEnabled !== 'undefined' && authEnabled && isAuthenticated) { %>
+        <form action="/logout" method="POST" style="margin: 0;">
+          <button type="submit" class="btn" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;" aria-label="Sign out">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px; vertical-align: middle;" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+            Sign Out
+          </button>
+        </form>
+        <% } %>
+      </div>
+    </header>
+
+    <!-- Security Warning Banner (only shown when not authenticated) -->
+    <% if (typeof authEnabled === 'undefined' || !authEnabled) { %>
+    <div id="security-banner" class="security-banner" role="alert" aria-label="Security notice">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="flex-shrink: 0;">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+        <line x1="12" y1="9" x2="12" y2="13"></line>
+        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+      </svg>
+      <div class="security-banner-content">
+        <strong>Security Notice:</strong>
+        <span id="security-message">
+          API endpoints may be unauthenticated. Keep services bound to localhost or trusted networks only.
+          <a href="https://github.com/SweetSamanthaVR/StreamDJ#authentication" target="_blank" rel="noopener" style="color: inherit; text-decoration: underline;">Learn how to enable authentication.</a>
+        </span>
+      </div>
+      <button id="dismiss-security-banner" class="security-banner-dismiss" aria-label="Dismiss security notice" title="Dismiss">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+    <% } %>
+
+    <div class="content">
+      
+      <!-- Dashboard Page Section -->
+      <div id="page-dashboard" class="page-section">
+      
+      <!-- KPI Stats -->
+      <div class="grid-4" id="dashboard">
+        <div class="card kpi-card">
+          <div class="kpi-title">Bitrate</div>
+          <div class="kpi-value" id="bitrate">0 kbps</div>
+        </div>
+        <div class="card kpi-card">
+          <div class="kpi-title">Restarts</div>
+          <div class="kpi-value" id="restarts">0</div>
+        </div>
+        <div class="card kpi-card">
+          <div class="kpi-title">Ingest Port</div>
+          <div class="kpi-value" id="tcp-port" style="font-family: var(--font-mono);">-</div>
+        </div>
+        <div class="card kpi-card">
+            <div class="kpi-title">Player Port</div>
+            <div class="kpi-value" id="player-port" style="font-family: var(--font-mono);">-</div>
+          </div>
+      </div>
+
+      <!-- Player & Playlist Grid -->
+      <div class="player-playlist-grid">
+        
+        <!-- Player Card -->
+        <div class="card">
+            <div class="card-header">
+                <h2>Now Playing</h2>
+                <div class="status-badge" id="playback-state" style="background:rgba(255,255,255,0.05); color:var(--text-secondary);">Ready</div>
+            </div>
+            <div class="card-body">
+                <div class="player-cover">
+                    <!-- Placeholder Visual -->
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="1"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></svg>
+                </div>
+                
+                <div class="track-meta">
+                    <div class="track-title" id="track-title">Waiting...</div>
+                    <div class="track-artist" id="track-artist">--</div>
+                    <div class="track-artist" id="track-album" style="font-size:0.8rem; opacity:0.7;">--</div>
+                </div>
+
+                <div class="controls" role="group" aria-label="Playback controls">
+                    <button class="btn" id="btn-previous" aria-label="Previous track">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 20L9 12l10-8v16zM5 19V5h2v14H5z"/></svg>
+                    </button>
+                    <button class="btn btn-primary" id="btn-play" style="width: 60px; height: 60px; border-radius: 50%;" aria-label="Play or pause">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    </button>
+                    <button class="btn" id="btn-next" aria-label="Next track">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 4l10 8-10 8V4zM19 5v14h-2V5h2z"/></svg>
+                    </button>
+                </div>
+
+                <div class="progress">
+                    <span id="track-position">0:00</span>
+                    <span id="track-duration">--:--</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Playlist Card -->
+        <div class="card" style="height: 500px;">
+            <div class="card-header">
+                <h2>Playlist Queue</h2>
+            </div>
+            <div style="flex:1; overflow-y:auto;">
+                <table class="playlist-table">
+                    <thead>
+                        <tr>
+                            <th width="40">#</th>
+                            <th>Title</th>
+                            <th>Artist</th>
+                            <th width="80">Time</th>
+                        </tr>
+                    </thead>
+                    <tbody id="playlist-body">
+                        <tr><td colspan="4" style="text-align:center; padding: 2rem; color: var(--text-secondary);">Loading tracks...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+      </div>
+      
+      <div style="text-align: right; color: var(--text-secondary); font-size: 0.8rem; margin-top: 2rem;" id="last-update">
+          Last update: never
+      </div>
+      
+      </div><!-- End Dashboard Page Section -->
+      
+      <!-- Overlay Page Section -->
+      <div id="page-overlay" class="page-section hidden">
+
+      <!-- Settings Section -->
+      <h1 id="overlay">Overlay Configuration</h1>
+      
+      <!-- Warning Message -->
+      <div class="card" style="background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.3); margin-bottom: 1rem;">
+        <div class="card-body" style="padding: 1rem;">
+          <div style="display: flex; align-items: start; gap: 12px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="2" style="flex-shrink: 0;" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            <div>
+              <div style="font-weight: 600; color: var(--warning); margin-bottom: 0.25rem;">Stream Restart Notice</div>
+              <div style="font-size: 0.9rem; color: var(--text-secondary);">
+                Changing any overlay configuration settings will restart the stream. 
+                Viewers will need to refresh their player after 10-15 seconds to reconnect.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="card-header">
+            <h2>Style & Typography</h2>
+            <div style="font-size:0.8rem; color:var(--text-secondary);" id="overlay-style-meta">v1.0</div>
+        </div>
+        <div class="card-body">
+            
+            <div class="player-playlist-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 0;">
+                
+                <!-- Form -->
+                <form id="overlay-style-form" class="settings-grid" onsubmit="return false;">
+                    
+                    <div class="form-group">
+                        <label>Font Color & Opacity</label>
+                        <div class="color-wrapper">
+                            <input type="color" id="style-font-color" data-style-path="font.color">
+                            <input type="number" id="style-font-opacity" placeholder="100%" min="0" max="100" data-scale="percent" data-style-path="font.opacity">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Font Size (px)</label>
+                        <input type="number" id="style-font-size" min="16" max="96" data-type="number" data-style-path="font.size">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Line Spacing (px)</label>
+                        <input type="number" id="style-line-spacing" min="0" max="64" data-type="number" data-style-path="font.lineSpacing">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Box Color & Opacity</label>
+                        <div class="color-wrapper">
+                            <input type="color" id="style-box-color" data-style-path="box.color">
+                            <input type="number" id="style-box-opacity" placeholder="40%" min="0" max="100" data-scale="percent" data-style-path="box.opacity">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Border Width (px)</label>
+                        <input type="number" id="style-border-width" min="0" max="80" data-type="number" data-style-path="box.borderWidth">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Horizontal Align</label>
+                        <select id="style-horizontal" data-style-path="layout.horizontal">
+                            <option value="left">Left</option>
+                            <option value="center">Center</option>
+                            <option value="right">Right</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Vertical Align</label>
+                        <select id="style-vertical" data-style-path="layout.vertical">
+                            <option value="top">Top</option>
+                            <option value="center">Center</option>
+                            <option value="bottom">Bottom</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label>
+                            <input type="checkbox" id="style-box-enabled" data-type="boolean" data-style-path="box.enabled"> Enable Background Box
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Offset X</label>
+                        <input type="number" id="style-offset-x" data-type="number" data-style-path="layout.offsetX">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Offset Y</label>
+                        <input type="number" id="style-offset-y" data-type="number" data-style-path="layout.offsetY">
+                    </div>
+
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label>
+                            <input type="checkbox" id="style-header-toggle" data-type="boolean" data-style-path="labels.showHeader"> Show Header Text
+                        </label>
+                    </div>
+
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label>Header Text</label>
+                        <input type="text" id="style-header-text" placeholder="e.g., NOW PLAYING" maxlength="60" data-style-path="labels.headerText">
+                    </div>
+
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label>Title Prefix</label>
+                        <input type="text" id="style-title-prefix" placeholder="e.g., 'Song: ' or leave empty" maxlength="30" data-style-path="labels.titlePrefix">
+                    </div>
+
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label>Artist Prefix</label>
+                        <input type="text" id="style-artist-prefix" placeholder="e.g., 'Artist: '" maxlength="30" data-style-path="labels.artistPrefix">
+                    </div>
+
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label>
+                            <input type="checkbox" id="style-show-album" data-type="boolean" data-style-path="labels.showAlbum"> Show Album Line
+                        </label>
+                    </div>
+
+                    <div class="form-group" style="grid-column: span 2;">
+                        <label>Album Prefix</label>
+                        <input type="text" id="style-album-prefix" placeholder="e.g., 'Album: '" maxlength="30" data-style-path="labels.albumPrefix">
+                    </div>
+
+                    <!-- Hidden but functional inputs for full feature set -->
+                    <input type="hidden" id="style-letter-spacing" data-type="number" data-style-path="font.letterSpacing">
+                    <input type="hidden" id="style-comment-prefix" data-style-path="labels.commentPrefix">
+                    
+                    <div style="grid-column: 1 / -1; display: flex; gap: 10px; margin-top: 1rem;">
+                        <button type="submit" id="btn-style-save" class="btn btn-primary" disabled aria-label="Save overlay style changes">Save Changes</button>
+                        <button type="button" id="btn-style-reset" class="btn btn-danger" aria-label="Reset overlay style to defaults">Reset Defaults</button>
+                    </div>
+                    <div id="letter-spacing-warning" style="display:none" role="alert" aria-live="polite"></div>
+                </form>
+
+                <!-- Preview -->
+                <div class="preview-wrapper" id="overlay-preview">
+                    <div class="preview-element">
+                        <div class="preview-box">
+                            <div id="preview-header" style="font-size: 0.7em; text-transform: uppercase; letter-spacing: 0.2em; display:none;">NOW PLAYING</div>
+                            <div id="preview-title" style="font-weight: 700;">Song Title</div>
+                            <div id="preview-artist">Artist: Example</div>
+                            <div id="preview-album">Album: Example</div>
+                            <div id="preview-comment" style="font-size: 0.8em; opacity: 0.8;">Duration 3:45</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+      </div>
+
+      <div class="card">
+          <div class="card-header">
+              <h2>Background Image</h2>
+          </div>
+          <div class="card-body" style="display: flex; flex-direction: column; gap: 1rem;">
+            <!-- Upload Section -->
+            <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;">
+              <div style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-secondary);">Upload New Background</div>
+              <form id="upload-background-form" style="display: flex; gap: 10px; align-items: flex-end;" aria-label="Upload background image">
+                <div style="flex: 1;">
+                  <input type="file" id="background-upload-input" accept=".png,.jpg,.jpeg,.bmp,.gif,.webp" style="display: none;" aria-label="Select background image file">
+                  <button type="button" id="btn-background-upload" class="btn btn-primary" style="width: 100%;" aria-label="Choose background image file">Choose File</button>
+                  <div id="upload-filename" style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.5rem;" aria-live="polite"></div>
+                </div>
+                <button type="submit" class="btn btn-primary" id="btn-upload-submit" disabled aria-label="Upload selected background image">Upload</button>
+              </form>
+              <div id="upload-progress" style="margin-top: 0.5rem; display: none;" role="status" aria-live="polite">
+                <div style="height: 4px; background: var(--bg-input); border-radius: 2px; overflow: hidden;">
+                  <div id="upload-progress-bar" style="height: 100%; background: var(--accent); width: 0%; transition: width 0.2s;" aria-hidden="true"></div>
+                </div>
+                <div id="upload-status" style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;"></div>
+              </div>
+            </div>
+
+            <!-- Manual Path Section -->
+            <div>
+              <div style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-secondary);">Set by Path</div>
+              <form id="background-form" style="display: flex; gap: 12px;" aria-label="Set background by file path">
+                <input type="text" id="background-input" placeholder="e.g., C:/images/bg.png or media/stream-backgrounds/file.png" style="flex: 1;" aria-label="Background file path">
+                <button type="submit" class="btn btn-primary" aria-label="Set background from path">Set</button>
+                <button type="button" id="btn-clear-background" class="btn" aria-label="Clear current background">Clear</button>
+              </form>
+            </div>
+
+            <!-- Recent Uploads -->
+            <div id="recent-uploads-section" style="border-top: 1px solid var(--border-color); padding-top: 1rem; display: none;">
+              <div style="font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-secondary);">Recent Uploads</div>
+              <div id="recent-uploads-list" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
+            </div>
+          </div>
+          <div style="padding: 0 1.25rem 1.25rem; font-size: 0.8rem; color: var(--text-secondary);">
+              Current: <strong id="background" style="color: var(--accent);">None</strong>
+          </div>
+      </div>
+      
+      </div><!-- End Overlay Page Section -->
+      
+      <!-- Technical Page Section -->
+      <div id="page-technical" class="page-section hidden">
+        
+        <h1 id="technical">Technical Diagnostics</h1>
+        
+        <!-- Stream Lifecycle Card -->
+        <div class="card">
+          <div class="card-header">
+            <h2>Stream Lifecycle</h2>
+            <div class="status-badge" id="diag-stream-state">Loading...</div>
+          </div>
+          <div class="card-body">
+            <div class="diag-grid">
+              <div class="diag-stat">
+                <div class="diag-stat-label">Current State</div>
+                <div class="diag-stat-value" id="diag-state">--</div>
+              </div>
+              <div class="diag-stat">
+                <div class="diag-stat-label">Session Uptime</div>
+                <div class="diag-stat-value" id="diag-session-uptime">--</div>
+              </div>
+              <div class="diag-stat">
+                <div class="diag-stat-label">Total Uptime</div>
+                <div class="diag-stat-value" id="diag-total-uptime">--</div>
+              </div>
+              <div class="diag-stat">
+                <div class="diag-stat-label">Restart Count</div>
+                <div class="diag-stat-value" id="diag-restart-count">0</div>
+              </div>
+              <div class="diag-stat">
+                <div class="diag-stat-label">Last Restart Reason</div>
+                <div class="diag-stat-value" id="diag-last-restart-reason">--</div>
+              </div>
+              <div class="diag-stat">
+                <div class="diag-stat-label">Last Restart Time</div>
+                <div class="diag-stat-value" id="diag-last-restart-time">--</div>
+              </div>
+              <div class="diag-stat">
+                <div class="diag-stat-label">Last Error</div>
+                <div class="diag-stat-value error" id="diag-last-error">None</div>
+              </div>
+              <div class="diag-stat">
+                <div class="diag-stat-label">FFmpeg PID</div>
+                <div class="diag-stat-value" id="diag-ffmpeg-pid">--</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Server State Card -->
+        <div class="card">
+          <div class="card-header">
+            <h2>Server State</h2>
+          </div>
+          <div class="card-body">
+            <div class="diag-grid">
+              <div class="diag-stat">
+                <div class="diag-stat-label">FFmpeg Running</div>
+                <div class="diag-stat-value" id="diag-ffmpeg-running">--</div>
+              </div>
+              <div class="diag-stat">
+                <div class="diag-stat-label">FFmpeg Uptime</div>
+                <div class="diag-stat-value" id="diag-ffmpeg-uptime">--</div>
+              </div>
+              <div class="diag-stat">
+                <div class="diag-stat-label">RTMP Connected</div>
+                <div class="diag-stat-value" id="diag-rtmp-connected">--</div>
+              </div>
+              <div class="diag-stat">
+                <div class="diag-stat-label">FFmpeg Restarts</div>
+                <div class="diag-stat-value" id="diag-ffmpeg-restarts">0</div>
+              </div>
+              <div class="diag-stat">
+                <div class="diag-stat-label">FFmpeg Blocked</div>
+                <div class="diag-stat-value" id="diag-ffmpeg-blocked">--</div>
+              </div>
+              <div class="diag-stat">
+                <div class="diag-stat-label">Producer Connected</div>
+                <div class="diag-stat-value" id="diag-producer-connected">--</div>
+              </div>
+              <div class="diag-stat">
+                <div class="diag-stat-label">Silence Active</div>
+                <div class="diag-stat-value" id="diag-silence-active">--</div>
+              </div>
+              <div class="diag-stat">
+                <div class="diag-stat-label">Ingest Total</div>
+                <div class="diag-stat-value" id="diag-ingest-total">--</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Network Stats Card -->
+        <div class="card">
+          <div class="card-header">
+            <h2>Network / Transport</h2>
+          </div>
+          <div class="card-body">
+            <div class="diag-grid">
+              <div class="diag-stat">
+                <div class="diag-stat-label">Endpoint</div>
+                <div class="diag-stat-value" id="diag-endpoint" style="font-size: 0.9rem;">--</div>
+              </div>
+              <div class="diag-stat">
+                <div class="diag-stat-label">Connection Type</div>
+                <div class="diag-stat-value" id="diag-connection-type">--</div>
+              </div>
+              <div class="diag-stat">
+                <div class="diag-stat-label">Bytes Transferred</div>
+                <div class="diag-stat-value" id="diag-bytes-transferred">--</div>
+              </div>
+              <div class="diag-stat">
+                <div class="diag-stat-label">Throughput</div>
+                <div class="diag-stat-value" id="diag-throughput">--</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Environment Card -->
+        <div class="card">
+          <div class="card-header">
+            <h2>Environment</h2>
+          </div>
+          <div class="card-body">
+            <div class="diag-grid">
+              <div class="diag-stat">
+                <div class="diag-stat-label">Platform</div>
+                <div class="diag-stat-value" id="diag-platform">--</div>
+              </div>
+              <div class="diag-stat">
+                <div class="diag-stat-label">Node Version</div>
+                <div class="diag-stat-value" id="diag-node-version">--</div>
+              </div>
+              <div class="diag-stat">
+                <div class="diag-stat-label">CPUs</div>
+                <div class="diag-stat-value" id="diag-cpus">--</div>
+              </div>
+              <div class="diag-stat">
+                <div class="diag-stat-label">Memory (Free / Total)</div>
+                <div class="diag-stat-value" id="diag-memory">--</div>
+              </div>
+              <div class="diag-stat">
+                <div class="diag-stat-label">Load Average</div>
+                <div class="diag-stat-value" id="diag-load">--</div>
+              </div>
+              <div class="diag-stat">
+                <div class="diag-stat-label">Process Uptime</div>
+                <div class="diag-stat-value" id="diag-process-uptime">--</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Restart History Card -->
+        <div class="card">
+          <div class="card-header">
+            <h2>Restart History</h2>
+            <span style="font-size: 0.8rem; color: var(--text-secondary);">Last 20 restarts</span>
+          </div>
+          <div class="card-body">
+            <div id="diag-restart-history" style="max-height: 300px; overflow-y: auto;">
+              <div style="color: var(--text-secondary); text-align: center; padding: 2rem;">No restarts recorded</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Recent Events Card -->
+        <div class="card">
+          <div class="card-header">
+            <h2>Recent Events</h2>
+            <span style="font-size: 0.8rem; color: var(--text-secondary);">Last 50 events</span>
+          </div>
+          <div class="card-body">
+            <div id="diag-events" class="event-timeline">
+              <div style="color: var(--text-secondary); text-align: center; padding: 2rem;">No events recorded</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Debug Log Viewer Card -->
+        <div class="card">
+          <div class="card-header">
+            <h2>Debug Logs</h2>
+            <div class="log-controls">
+              <button type="button" class="btn" id="btn-copy-logs" title="Copy to Clipboard">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                Copy
+              </button>
+              <button type="button" class="btn" id="btn-download-logs" title="Download Logs">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Download
+              </button>
+              <button type="button" class="btn" id="btn-clear-logs" title="Clear Logs">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                Clear
+              </button>
+            </div>
+          </div>
+          <div class="card-body" style="padding-top: 0;">
+            <div class="filter-bar">
+              <label>Level:</label>
+              <select id="log-level-filter">
+                <option value="DEBUG">DEBUG</option>
+                <option value="INFO" selected>INFO</option>
+                <option value="WARN">WARN</option>
+                <option value="ERROR">ERROR</option>
+              </select>
+              <label>Search:</label>
+              <input type="text" id="log-search" placeholder="Filter logs..." style="width: 200px;">
+              <span id="log-count" style="font-size: 0.8rem; color: var(--text-secondary); margin-left: auto;">0 entries</span>
+            </div>
+            <div class="log-viewer" id="log-viewer">
+              <div style="color: var(--text-secondary); text-align: center; padding: 2rem;">Loading logs...</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Export Section -->
+        <div class="card">
+          <div class="card-header">
+            <h2>Export Diagnostics</h2>
+          </div>
+          <div class="card-body">
+            <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
+              Export a complete diagnostics bundle including all logs, events, restart history, and system state for troubleshooting.
+            </p>
+            <div style="display: flex; gap: 10px;">
+              <button type="button" class="btn btn-primary" id="btn-export-diagnostics">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Export Full Diagnostics (JSON)
+              </button>
+              <button type="button" class="btn" id="btn-copy-diagnostics">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                Copy Summary to Clipboard
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <div style="text-align: right; color: var(--text-secondary); font-size: 0.8rem; margin-top: 2rem;" id="diag-last-update">
+          Diagnostics last updated: never
+        </div>
+        
+      </div><!-- End Technical Page Section -->
+      
+      <!-- Unused but required for logic references -->
+      <span id="http-port" style="display:none"></span>
+    </div>
+  </main>
+
+  <div class="toast" id="toast" role="alert" aria-live="assertive" aria-atomic="true">Notification</div>
+
+  <!-- Server-injected configuration (must remain inline for EJS templating) -->
+  <script>
+    const INITIAL_STATE = JSON.parse('<%- initialStateJson %>');
+    const CONFIG = JSON.parse('<%- configJson %>');
+  </script>
+  <!-- Main application logic -->
+  <script src="/js/webui.js"></script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+# Dependencies
+node_modules/
+
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.secret
+
+# Build output
+dist/
+
+# Logs
+*.log
+logs/
+
+# Temporary overlay files
+streamdj-overlay-*.txt
+
+# Runtime data (user-specific)
+data/ffmpeg-overlay-style.json
+data/background.json
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+ehthumbs.db
+
+# IDE and Editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Test artifacts
+coverage/
+.nyc_output/
+test-results/
+
+# Audit file (development only)
+audit.md
+
+# Personal/temporary files
+*.tmp
+*.bak
+VRChat_*.png
