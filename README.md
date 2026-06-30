@@ -1,96 +1,73 @@
-# StreamDJ - Streaming Audio DJ Toolkit
+# StreamDJ
 
-StreamDJ is a local streaming toolkit that scans a music library, streams audio to FFmpeg with a real-time overlay, and provides HTTP APIs plus a web UI for playback control and stream status.
+A local toolkit for running an unattended music stream: it scans a folder of MP3s, decodes and pipes the audio to FFmpeg with a live text overlay burnt in, and gives you a web UI to control playback and watch the stream's health.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6.3-blue)](https://www.typescriptlang.org/)
 
-## Features
+## What it does
 
-- 🎵 **Music Library Scanning** - Automatically scans MP3 files and extracts metadata
-- 🔀 **Playback Controls** - Shuffle playback with next/previous/pause/resume
-- 📡 **TCP Audio Pipeline** - Streams decoded audio from player to server
-- 🎥 **FFmpeg Encoding** - Real-time overlay text rendered into the video stream
-- 🖼️ **Background Management** - Switch image/video backgrounds and upload images
-- 🌐 **Web UI Control Panel** - Live status, playlist, and overlay style editor
-- 🩺 **Health & Diagnostics** - Status, health, and diagnostics endpoints
-- 🔄 **Auto-Recovery** - FFmpeg crash recovery with backoff
+- Scans your music library and pulls metadata out of the MP3 tags
+- Shuffles playback, with next/previous/pause/resume from the control panel
+- Streams decoded audio from the player to the server over a local TCP socket
+- Encodes with FFmpeg and burns a configurable text overlay into the video
+- Lets you swap backgrounds (image or video) and upload new ones on the fly
+- Ships a web UI with live status, the playlist, and an overlay style editor
+- Exposes health and diagnostics endpoints so you can keep an eye on it
+- Restarts FFmpeg itself with backoff if it falls over
 
-## Quick Start
+It runs as three separate processes — player, server, web UI — talking to each other over localhost. More on that below.
+
+## Getting started
 
 ```bash
-# 1. Install dependencies
+# install dependencies
 npm install
 
-# 2. Create env file
+# copy the env template and fill it in
 cp .env.sample .env
+# set RTMP_URL, STREAM_KEY, and MUSIC_DIR (e.g. ./media/music)
 
-# 3. Update .env with RTMP_URL, STREAM_KEY, and MUSIC_DIR (e.g., ./media/music)
-
-# 4. Build the Web UI
+# build the web UI
 npm run build:webui
 
-# 5. Start the server (Terminal 1)
-npm start
+# three terminals:
+npm start               # server
+npm run start:player    # player
+npm run start:webui     # web UI
 
-# 6. Start the player (Terminal 2)
-npm run start:player
-
-# 7. Start the Web UI (Terminal 3)
-npm run start:webui
-
-# 8. Open in browser
-# http://localhost:8080
+# then open http://localhost:8080
 ```
 
-**First-time setup**: Ensure FFmpeg is installed and available in your PATH.
+You'll need FFmpeg on your PATH before any of this works.
 
-## System Requirements
+## What you need
 
-- **Node.js** 18.0.0 or higher (global `fetch` required)
-- **FFmpeg** installed and available in PATH
-- **RTMP Endpoint** and **Stream Key** for your streaming service
-- **Ports**: 5000/TCP (audio ingest), 4000/HTTP (server API), 3000/HTTP (player API), 8080/HTTP (web UI)
-- **Memory / Storage**: 512MB+ RAM (1GB+ recommended). Storage depends on your music library and backgrounds; app/runtime files are ~200MB or less.
-- **Operating System**: Windows, macOS, or Linux (FFmpeg supported)
+- **Node.js** 18 or newer (it uses the global `fetch`)
+- **FFmpeg**, installed and on PATH
+- An **RTMP endpoint and stream key** from wherever you're streaming to
+- These ports free: 5000/TCP (audio ingest), 4000/HTTP (server API), 3000/HTTP (player API), 8080/HTTP (web UI)
+- 512MB RAM at a minimum, 1GB+ is more comfortable. The app itself is small; storage is really down to your music and background files
+- Windows, macOS or Linux — anywhere FFmpeg runs
 
-## Documentation
+## The pieces
 
-- 📖 **Installation Guide** - See Quick Start section above
-- ⚙️ **[Configuration](.env.sample)** - Environment variables template
-- 🔧 **Troubleshooting** - See Known Limitations section below
-- 🤝 **[Contributing](CONTRIBUTING.md)** - How to contribute
-- 🔌 **[API Documentation](docs/API.md)** - Minimal HTTP API reference
-- 🔒 **Security** - Local network use by default; optional API key authentication available
-- 📌 **[Changelog](CHANGELOG.md)** - Version history
-
-## Production Ready Features
-
-StreamDJ 1.0 includes the following production-ready features:
-
-- ✅ Music library scanning and MP3 metadata extraction
-- ✅ TCP audio pipeline from player to server
-- ✅ FFmpeg encoding with real-time text overlay
-- ✅ Background image/video management
-- ✅ Web UI control panel with live status
-- ✅ Health and diagnostics endpoints
-- ✅ FFmpeg crash recovery with exponential backoff
-- ✅ Configurable overlay styling
+- **Player** (`player.js`) — scans the library, decodes MP3s, exposes playback control over HTTP
+- **Server** (`server.js`) — takes audio over TCP, runs it through FFmpeg, pushes it out to RTMP
+- **Web UI** (`webui.ts`) — the control panel, proxying a limited set of actions through to the other two
 
 ## Security
 
-### Network Binding (Localhost by Default)
+### Everything binds to localhost by default
 
-All HTTP services bind to **localhost (127.0.0.1)** by default for security:
-
-| Service    | Default Host | Environment Variable |
-| ---------- | ------------ | -------------------- |
-| Server API | 127.0.0.1    | `HTTP_HOST`          |
-| Player API | 127.0.0.1    | `PLAYER_API_HOST`    |
+| Service    | Default host | Override          |
+| ---------- | ------------ | ------------------ |
+| Server API | 127.0.0.1    | `HTTP_HOST`         |
+| Player API | 127.0.0.1    | `PLAYER_API_HOST`   |
 | Web UI     | 127.0.0.1    | `WEBUI_HOST`         |
 
-To expose services to the network, explicitly set the host to `0.0.0.0` in your `.env` file:
+If you want any of it reachable from the network, set the relevant host to `0.0.0.0` in `.env`:
 
 ```bash
 HTTP_HOST=0.0.0.0
@@ -98,30 +75,22 @@ PLAYER_API_HOST=0.0.0.0
 WEBUI_HOST=0.0.0.0
 ```
 
-⚠️ **Warning:** Only expose to the network on trusted networks or enable authentication.
+Only do this on a network you trust, or with authentication switched on — there isn't any by default.
 
 ### Authentication
 
-StreamDJ supports two authentication methods. Choose the one that fits your needs:
+Two ways to lock it down, and you can run both at once.
 
-#### Option 1: Password Login (Recommended)
+**Password login**, for the web UI. Add to `.env`:
 
-The simplest way to secure your Web UI. Set credentials and you're done!
+```bash
+STREAMDJ_USERNAME=admin
+STREAMDJ_PASSWORD=your-password-here
+```
 
-1. Add this to your `.env` file:
+Username is optional — leave it out and the login page just asks for a password. Restart the web UI and you'll see a login screen, with a sign-out button once you're in.
 
-   ```bash
-   STREAMDJ_USERNAME=admin
-   STREAMDJ_PASSWORD=your-password-here
-   ```
-
-   > **Note:** Username is optional. If you only set `STREAMDJ_PASSWORD`, the login page will only ask for a password.
-
-2. Restart the Web UI (`npm run start:webui`)
-
-**That's it!** You'll now see a login page when you open the Web UI. A "Sign Out" button appears in the top-right corner once logged in.
-
-**Need to generate a secure password?** Run one of these commands:
+Need a password? Any of these will do:
 
 ```bash
 # Windows PowerShell
@@ -130,195 +99,136 @@ The simplest way to secure your Web UI. Set credentials and you're done!
 # Linux/macOS
 openssl rand -base64 16
 
-# Node.js (any platform)
+# Node.js, any platform
 node -e "console.log(require('crypto').randomBytes(16).toString('base64'))"
 ```
 
-**Security features:**
+Passwords are checked with a constant-time comparison, sessions use secure httpOnly cookies, five failed attempts buys a 15-minute lockout, and nothing gets logged.
 
-- ✅ Passwords are compared using constant-time comparison (prevents timing attacks)
-- ✅ Sessions use secure httpOnly cookies
-- ✅ Rate limiting: 5 failed attempts = 15 minute lockout
-- ✅ No passwords are ever logged
-
-#### Option 2: API Key (For Developers)
-
-Use this if you need programmatic access to the API endpoints (scripts, automation, etc.).
-
-1. Add this to your `.env` file:
-
-   ```bash
-   STREAMDJ_API_KEY=your-secret-key-here
-   ```
-
-2. Restart all StreamDJ processes
-
-3. Include the key in your API requests:
-   ```bash
-   curl -H "Authorization: Bearer your-secret-key-here" http://localhost:4000/status
-   ```
-
-**Generate a secure API key:**
+**API key**, if you're scripting against the endpoints. Add to `.env`:
 
 ```bash
-# Linux/macOS
-openssl rand -hex 32
+STREAMDJ_API_KEY=your-secret-key-here
+```
 
-# Node.js (any platform)
+Restart everything, then send it as a bearer token:
+
+```bash
+curl -H "Authorization: Bearer your-secret-key-here" http://localhost:4000/status
+```
+
+Generate one with:
+
+```bash
+openssl rand -hex 32
+# or
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-You can use **both** options together - password protects the Web UI, API key protects programmatic access.
+`/health` is always open, regardless of auth, so monitoring tools can poll it.
 
-**Note:** The `/health` endpoint is always accessible without authentication for monitoring purposes.
+## Worth knowing before you rely on this
 
-## Known Limitations
+- Auth is off unless you turn it on — do that before exposing anything to a network
+- No Docker image yet
+- One player at a time; no multi-player setups
+- Playlists aren't persisted — restart the player and you start fresh
+- A library with a few thousand files will take a moment to scan on first run
+- FFmpeg isn't bundled, you have to install it yourself
+- No rate limiting on the API endpoints
 
-- **Authentication Optional**: Auth is disabled by default. Enable it when exposing to the network.
-- **No Docker Support**: Containerized deployment is not currently supported.
-- **Single Player Only**: Multi-player setups are not supported.
-- **No Playlist Persistence**: Playlists reset on player restart.
-- **Large Libraries**: Initial scan may take time for libraries with thousands of files.
-- **FFmpeg Required**: FFmpeg must be installed and in PATH; not bundled with StreamDJ.
-- **No API Rate Limiting**: API endpoints have no rate limiting or throttling.
-
-## Default Ports
+## Ports
 
 | Component       | Port | Protocol | Purpose                                   |
-| --------------- | ---- | -------- | ----------------------------------------- |
-| Player → Server | 5000 | TCP      | Audio ingestion from player to server     |
-| Server HTTP     | 4000 | HTTP     | Metadata, background, status, diagnostics |
-| Player HTTP     | 3000 | HTTP     | Playback control and playlist access      |
-| Web UI          | 8080 | HTTP     | Control dashboard                         |
+| ---------------- | ---- | -------- | ------------------------------------------ |
+| Player → Server  | 5000 | TCP      | Audio handed off from player to server      |
+| Server HTTP      | 4000 | HTTP     | Metadata, backgrounds, status, diagnostics  |
+| Player HTTP      | 3000 | HTTP     | Playback control, playlist                  |
+| Web UI           | 8080 | HTTP     | The control panel                           |
 
-## Components
-
-StreamDJ runs as three coordinated processes:
-
-- **Player (`player.js`)** - Scans the music library, decodes MP3 audio, and exposes control APIs
-- **Server (`server.js`)** - Receives audio over TCP, encodes via FFmpeg, and streams to RTMP
-- **Web UI (`webui.ts`)** - Renders the control panel and proxies limited actions to the APIs
-
-## Project Structure
+## Layout
 
 ```
 StreamDJ/
-├── src/                        # Source code
-│   ├── server.js              # Main server orchestrator
-│   ├── player.js              # Main player orchestrator
-│   ├── lib/                   # Shared utilities and services
-│   ├── server/                # Server submodules
+├── src/                        # source
+│   ├── server.js                # server orchestrator
+│   ├── player.js                # player orchestrator
+│   ├── lib/                     # shared utilities
+│   ├── server/                  # server submodules
 │   │   ├── background-manager.js
 │   │   ├── ffmpeg-manager.js
 │   │   ├── http-api.js
 │   │   └── ...
-│   └── player/                # Player submodules
+│   └── player/                  # player submodules
 │       ├── audio-socket.js
 │       ├── http-api.js
 │       ├── music-scanner.js
 │       └── ...
-├── webui.ts                   # Web UI server (TypeScript source)
-├── dist/                      # Compiled Web UI output (generated)
-├── config/                    # Default overlay configuration
-├── data/                      # Runtime data (gitignored)
-├── views/                     # EJS templates
+├── webui.ts                    # web UI server (TypeScript)
+├── dist/                       # compiled web UI (generated)
+├── config/                     # default overlay config
+├── data/                       # runtime data (gitignored)
+├── views/                      # EJS templates
 ├── media/
-│   ├── stream-backgrounds/     # Background assets
-│   └── music/                 # Music library (gitignored)
-├── types/                     # TypeScript definitions
-├── .env.sample                # Environment template
-├── CONTRIBUTING.md            # Contribution guidelines
-├── LICENSE                    # MIT License
-└── README.md                  # This file
+│   ├── stream-backgrounds/     # background assets
+│   └── music/                  # your music (gitignored)
+├── types/                      # TypeScript definitions
+├── .env.sample
+├── CONTRIBUTING.md
+├── LICENSE
+└── README.md
 ```
 
-## Common Commands
+## Commands
 
 ```bash
-# Build
-npm run build           # Compile TypeScript
-npm run build:webui     # Compile Web UI TypeScript
+# build
+npm run build           # compile TypeScript
+npm run build:webui     # compile the web UI
 
-# Run
-npm start               # Start server
-npm run start:player    # Start player
-npm run start:webui     # Start Web UI (compiled)
-npm run dev:webui       # Start Web UI (ts-node)
+# run
+npm start                # server
+npm run start:player     # player
+npm run start:webui      # web UI (compiled)
+npm run dev:webui        # web UI via ts-node
 
-# Quality
-npm run lint            # Lint JavaScript
-npm run lint:fix        # Lint and fix
-npm run format          # Format code
-npm run format:check    # Check formatting
+# quality
+npm run lint
+npm run lint:fix
+npm run format
+npm run format:check
 ```
 
-## Technology Stack
+## Stack
 
-- **Runtime**: Node.js (CommonJS)
-- **Server**: Express, Helmet
-- **Templates**: EJS
-- **Streaming**: FFmpeg (RTMP output)
-- **Metadata**: music-metadata
-- **File Watching**: chokidar
-- **Uploads**: multer
-- **Web UI**: TypeScript
+Node (CommonJS) on the server side, Express and Helmet, EJS for templates, FFmpeg doing the actual encoding to RTMP, `music-metadata` for tags, `chokidar` watching files, `multer` handling uploads, and TypeScript for the web UI.
 
-## Quick Links
+## Once it's running
 
-- **Web UI**: http://localhost:8080
-- **Server Status**: http://localhost:4000/status
-- **Server Health**: http://localhost:4000/health
-- **Player Status**: http://localhost:3000/status
-
-## Screenshots
-
-### Web UI - Control Panel
-
-_Not documented yet_
-
-### Overlay Style Editor
-
-_Not documented yet_
-
-### Diagnostics View
-
-_Not documented yet_
-
-## Support
-
-- 📋 **Issues**: https://github.com/SweetSamanthaVR/StreamDJ/issues
-- 💬 **Discussions**: https://github.com/SweetSamanthaVR/StreamDJ/discussions
-- 🐛 **Found a bug?** Open an issue
-- 💡 **Feature idea?** Open a feature request
+- Web UI: http://localhost:8080
+- Server status: http://localhost:4000/status
+- Server health: http://localhost:4000/health
+- Player status: http://localhost:3000/status
 
 ## Contributing
 
-Want to help? Awesome! Check out [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Pull requests welcome. Fork it, branch off, make your change, test it properly, and send it over. See [CONTRIBUTING.md](CONTRIBUTING.md) for the details.
 
-**Quick steps:**
+## Issues
 
-1. Fork the repo
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+Found a bug or want to suggest something? Open an issue or start a discussion:
 
-## License
+- https://github.com/SweetSamanthaVR/StreamDJ/issues
+- https://github.com/SweetSamanthaVR/StreamDJ/discussions
 
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+## Licence
+
+MIT — see [LICENSE](LICENSE).
 
 ## Disclaimer
 
-StreamDJ is provided as-is for local streaming use. Users are responsible for:
-
-- Installing and maintaining FFmpeg on their system
-- Securing their RTMP endpoint and stream key
-- Enabling API key authentication when exposing services to untrusted networks
-- Complying with applicable copyright and streaming service agreements
-
-This project is not affiliated with or endorsed by any streaming platforms or services.
+You're responsible for installing and keeping FFmpeg up to date, for securing your own RTMP endpoint and stream key, for switching on authentication if you expose this beyond your own machine, and for staying on the right side of copyright and your streaming service's terms. StreamDJ isn't affiliated with or endorsed by any streaming platform.
 
 ---
 
-**Version:** 1.0.0  
-**Last Updated:** January 31, 2026
+**Version:** 1.0.0
