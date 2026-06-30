@@ -17,7 +17,7 @@ A local toolkit for running an unattended music stream: it scans a folder of MP3
 - Exposes health and diagnostics endpoints so you can keep an eye on it
 - Restarts FFmpeg itself with backoff if it falls over
 
-It runs as three separate processes — player, server, web UI — talking to each other over localhost. More on that below.
+It runs as three separate processes: player, server, web UI, talking to each other over localhost. More on that below.
 
 ## Getting started
 
@@ -49,13 +49,13 @@ You'll need FFmpeg on your PATH before any of this works.
 - An **RTMP endpoint and stream key** from wherever you're streaming to
 - These ports free: 5000/TCP (audio ingest), 4000/HTTP (server API), 3000/HTTP (player API), 8080/HTTP (web UI)
 - 512MB RAM at a minimum, 1GB+ is more comfortable. The app itself is small; storage is really down to your music and background files
-- Windows, macOS or Linux — anywhere FFmpeg runs
+- Windows, macOS or Linux, anywhere FFmpeg runs
 
 ## The pieces
 
-- **Player** (`player.js`) — scans the library, decodes MP3s, exposes playback control over HTTP
-- **Server** (`server.js`) — takes audio over TCP, runs it through FFmpeg, pushes it out to RTMP
-- **Web UI** (`webui.ts`) — the control panel, proxying a limited set of actions through to the other two
+- **Player** (`player.js`): scans the library, decodes MP3s, exposes playback control over HTTP
+- **Server** (`server.js`): takes audio over TCP, runs it through FFmpeg, pushes it out to RTMP
+- **Web UI** (`webui.ts`): the control panel, proxying a limited set of actions through to the other two
 
 ## Security
 
@@ -75,7 +75,7 @@ PLAYER_API_HOST=0.0.0.0
 WEBUI_HOST=0.0.0.0
 ```
 
-Only do this on a network you trust, or with authentication switched on — there isn't any by default.
+Only do this on a network you trust, or with authentication switched on, there isn't any by default.
 
 ### Authentication
 
@@ -88,7 +88,7 @@ STREAMDJ_USERNAME=admin
 STREAMDJ_PASSWORD=your-password-here
 ```
 
-Username is optional — leave it out and the login page just asks for a password. Restart the web UI and you'll see a login screen, with a sign-out button once you're in.
+Username is optional, leave it out and the login page just asks for a password. Restart the web UI and you'll see a login screen, with a sign-out button once you're in.
 
 Need a password? Any of these will do:
 
@@ -129,10 +129,10 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 ## Worth knowing before you rely on this
 
-- Auth is off unless you turn it on — do that before exposing anything to a network
+- Auth is off unless you turn it on, do that before exposing anything to a network
 - No Docker image yet
 - One player at a time; no multi-player setups
-- Playlists aren't persisted — restart the player and you start fresh
+- Playlists aren't persisted, restart the player and you start fresh
 - A library with a few thousand files will take a moment to scan on first run
 - FFmpeg isn't bundled, you have to install it yourself
 - No rate limiting on the API endpoints
@@ -223,7 +223,7 @@ Found a bug or want to suggest something? Open an issue or start a discussion:
 
 ## Licence
 
-MIT — see [LICENSE](LICENSE).
+MIT, see [LICENSE](LICENSE).
 
 ## Disclaimer
 
