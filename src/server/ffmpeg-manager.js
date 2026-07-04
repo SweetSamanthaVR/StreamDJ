@@ -112,7 +112,7 @@ function createFfmpegManager(deps) {
   /**
    * Resolves and validates background path
    * @param {string|null} backgroundPath - Path to background
-   * @returns {string|null} Resolved path or null for solid color
+   * @returns {string|null} Resolved path or null for solid colour
    */
   function resolveBackgroundPath(backgroundPath) {
     if (!backgroundPath) {
@@ -125,11 +125,11 @@ function createFfmpegManager(deps) {
       if (stat.isFile()) {
         return candidate;
       } else {
-        warn(`Background source at ${candidate} is not a file. Using solid color.`);
+        warn(`Background source at ${candidate} is not a file. Using solid colour.`);
         return null;
       }
     } catch (err) {
-      warn(`Background source ${backgroundPath} unavailable: ${err.message}. Using solid color.`);
+      warn(`Background source ${backgroundPath} unavailable: ${err.message}. Using solid colour.`);
       return null;
     }
   }
@@ -395,7 +395,11 @@ function createFfmpegManager(deps) {
       target
     );
 
-    log('Spawning ffmpeg ->', ['ffmpeg', ...args].join(' '));
+    /* Never log the full RTMP target - it contains the stream key */
+    const redactedArgs = args.map((arg) =>
+      arg === target ? target.replace(streamKey, '***') : arg
+    );
+    log('Spawning ffmpeg ->', ['ffmpeg', ...redactedArgs].join(' '));
 
     try {
       ffmpegProcess = spawn('ffmpeg', args, { stdio: ['pipe', 'ignore', 'pipe'] });
@@ -659,6 +663,30 @@ function createFfmpegManager(deps) {
   }
 
   /**
+   * Manually clears the blocked state and retries FFmpeg
+   * @returns {boolean} True if the blocked state was cleared
+   */
+  function manualUnblock() {
+    if (!ffmpegBlocked) {
+      return false;
+    }
+    ffmpegBlocked = false;
+    ffmpegRestartAttempts = [];
+    if (ffmpegBlockTimeout) {
+      clearTimeout(ffmpegBlockTimeout);
+      ffmpegBlockTimeout = null;
+    }
+    log('FFmpeg blocked state cleared manually - retrying');
+    if (diagnostics) {
+      diagnostics.recordEvent('ffmpeg.unblock', { trigger: 'manual' });
+    }
+    if (!ffmpegProcess) {
+      spawn_();
+    }
+    return true;
+  }
+
+  /**
    * Gets RTMP status
    * @returns {Object} Status object
    */
@@ -725,6 +753,7 @@ function createFfmpegManager(deps) {
     /* State */
     isRunning,
     isBlocked,
+    manualUnblock,
     getStatus,
 
     /* Pause management */

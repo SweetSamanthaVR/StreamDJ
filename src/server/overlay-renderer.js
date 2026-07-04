@@ -21,11 +21,11 @@ const { ignoreErrors } = require('../lib/utils/errors');
  * @param {Function} deps.log - Logger function
  * @param {Function} deps.warn - Warning logger function
  * @param {Function} deps.getOverlayStyle - Function to get current overlay style
- * @param {boolean} deps.ffmpegSupportsLetterSpacing - Whether FFmpeg supports letter_spacing
+ * @param {Function} deps.getLetterSpacingSupport - Returns whether FFmpeg supports letter_spacing
  * @returns {Object} Overlay renderer API
  */
 function createOverlayRenderer(deps) {
-  const { log, warn, getOverlayStyle, ffmpegSupportsLetterSpacing = false } = deps;
+  const { log, warn, getOverlayStyle, getLetterSpacingSupport = () => false } = deps;
 
   /* Temporary file for overlay text */
   const OVERLAY_FILE = path.join(os.tmpdir(), `streamdj-overlay-${process.pid}.txt`);
@@ -48,10 +48,10 @@ function createOverlayRenderer(deps) {
   }
 
   /**
-   * Formats FFmpeg color with optional opacity
-   * @param {string} hex - Hex color (e.g., '#FFFFFF')
+   * Formats an FFmpeg colour with optional opacity
+   * @param {string} hex - Hex colour (e.g. '#FFFFFF')
    * @param {number} [opacity=1] - Opacity value (0-1)
-   * @returns {string} FFmpeg-formatted color string
+   * @returns {string} FFmpeg-formatted colour string
    */
   function formatFfmpegColor(hex, opacity) {
     const normalized =
@@ -142,7 +142,7 @@ function createOverlayRenderer(deps) {
 
   /**
    * Builds multi-line overlay text from metadata
-   * @param {Object} meta - Normalized metadata object
+   * @param {Object} meta - Normalised metadata object
    * @param {Object} [style] - Optional style override
    * @returns {string} Formatted overlay text with newlines
    */
@@ -195,7 +195,7 @@ function createOverlayRenderer(deps) {
       `y=${computeOverlayY(layout)}`,
     ];
 
-    if (ffmpegSupportsLetterSpacing && letterSpacing !== 0) {
+    if (getLetterSpacingSupport() && letterSpacing !== 0) {
       parts.push(`letter_spacing=${letterSpacing}`);
     }
 
@@ -233,7 +233,7 @@ function createOverlayRenderer(deps) {
         title: 'StreamDJ Live',
         artist: 'StreamDJ',
         album: 'Live Mix',
-        comment: 'Waiting for tracks…',
+        comment: 'Waiting for tracks...',
       }
     );
     await fs.promises.writeFile(OVERLAY_FILE, initialContent, 'utf8');
@@ -243,7 +243,7 @@ function createOverlayRenderer(deps) {
 
   /**
    * Synchronously queues an overlay file update
-   * @param {Object} meta - Normalized metadata
+   * @param {Object} meta - Normalised metadata
    * @param {boolean} [force=false] - Force write even if signature unchanged
    * @returns {Promise} Write queue promise
    */
@@ -276,7 +276,7 @@ function createOverlayRenderer(deps) {
 
   /**
    * Asynchronous overlay file sync with change detection
-   * @param {Object} meta - Normalized metadata
+   * @param {Object} meta - Normalised metadata
    * @param {boolean} [force=false] - Force write even if signature unchanged
    * @returns {Promise} Write queue promise
    */

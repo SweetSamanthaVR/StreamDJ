@@ -143,7 +143,7 @@ function createHttpRoutes(deps) {
     backgroundManager.setBackground(validation.resolved);
 
     if (!validation.resolved) {
-      log('Background reset to solid color');
+      log('Background reset to solid colour');
     } else {
       log(`Background change requested -> ${validation.resolved}`);
     }

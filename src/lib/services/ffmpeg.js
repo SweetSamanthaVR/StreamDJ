@@ -104,21 +104,21 @@ function validateFfmpegAvailable() {
  * @param {string} [componentName='StreamDJ'] - Name of the component for context
  */
 function logFfmpegInstallHelp(errorLogger, componentName = 'StreamDJ') {
-  errorLogger('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  errorLogger('----------------------------------------------------');
   errorLogger('FATAL: FFmpeg is not available in your system PATH');
   errorLogger('');
-  errorLogger(`${componentName} requires FFmpeg to function properly.`);
+  errorLogger(`${componentName} requires FFmpeg to run.`);
   errorLogger('');
-  errorLogger('Please install FFmpeg:');
-  errorLogger('  • Windows: Download from https://ffmpeg.org/download.html');
-  errorLogger('            or use: winget install ffmpeg');
-  errorLogger('  • macOS:   brew install ffmpeg');
-  errorLogger('  • Linux:   sudo apt install ffmpeg (Ubuntu/Debian)');
-  errorLogger('            or sudo yum install ffmpeg (RHEL/CentOS)');
+  errorLogger('Install FFmpeg:');
+  errorLogger('  Windows: download from https://ffmpeg.org/download.html');
+  errorLogger('           or run: winget install ffmpeg');
+  errorLogger('  macOS:   brew install ffmpeg');
+  errorLogger('  Linux:   sudo apt install ffmpeg (Ubuntu/Debian)');
+  errorLogger('           or sudo yum install ffmpeg (RHEL/CentOS)');
   errorLogger('');
-  errorLogger('After installation, ensure "ffmpeg" is in your PATH');
+  errorLogger('Once installed, make sure "ffmpeg" is on your PATH');
   errorLogger('and restart this application.');
-  errorLogger('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  errorLogger('----------------------------------------------------');
 }
 
 module.exports = {

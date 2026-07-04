@@ -96,7 +96,7 @@ function requireUrlEnv(name, protocol, context) {
   const url = requireEnv(name, context);
   try {
     const parsed = new URL(url);
-    /* Normalize protocol param like 'rtmp://' -> 'rtmp:' for comparison with URL.protocol */
+    /* Normalise protocol param like 'rtmp://' -> 'rtmp:' for comparison with URL.protocol */
     const normalizedProto = protocol.replace(/:\/\/$/, ':');
     if (parsed.protocol !== normalizedProto) {
       const prefix = context ? `[${context}]` : '[env]';

@@ -4,7 +4,7 @@
  * StreamDJ Player Module
  *
  * Orchestrates the music player components: playlist management, audio playback,
- * server connection, and HTTP API. Scans the music directory for MP3 files,
+ * server connection, and HTTP API. Scans the music directory for audio files,
  * extracts metadata, and streams decoded audio to the StreamDJ server via TCP.
  *
  * @module player
@@ -115,8 +115,8 @@ function registerSignalHandlers() {
 }
 
 /**
- * Bootstraps the music player application by initializing all components
- * @returns {Promise<void>} Resolves when all initialization is complete
+ * Bootstraps the music player application by initialising all components
+ * @returns {Promise<void>} Resolves when all initialisation is complete
  * @throws {Error} If Node.js version doesn't support fetch API
  */
 async function bootstrap() {
@@ -134,7 +134,7 @@ async function bootstrap() {
 
   log('FFmpeg validation passed');
 
-  /* Initialize playlist manager */
+  /* Initialise playlist manager */
   if (!MUSIC_DIR) {
     error(
       'MUSIC_DIR environment variable is not set. Set it in .env file, e.g., MUSIC_DIR=./media/music'
@@ -147,7 +147,7 @@ async function bootstrap() {
     shuffle: SHUFFLE_DEFAULT,
   });
 
-  /* Initialize audio socket with drain callback */
+  /* Initialise audio socket with drain callback */
   audioSocket = createAudioSocket({
     onDrain: () => {
       if (playbackController) {
@@ -156,13 +156,13 @@ async function bootstrap() {
     },
   });
 
-  /* Initialize playback controller */
+  /* Initialise playback controller */
   playbackController = createPlaybackController({
     playlistManager,
     audioSocket,
   });
 
-  /* Initialize HTTP API */
+  /* Initialise HTTP API */
   httpApi = createHttpApi({
     playlistManager,
     playbackController,
@@ -172,7 +172,7 @@ async function bootstrap() {
   /* Register signal handlers */
   registerSignalHandlers();
 
-  /* Initialize playlist and start components */
+  /* Initialise playlist and start components */
   await playlistManager.ensureMusicDir();
   await playlistManager.loadInitialPlaylist();
   playlistManager.watchMusicDirectory();

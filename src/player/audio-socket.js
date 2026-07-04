@@ -75,15 +75,15 @@ function createAudioSocket(options = {}) {
 
     /* Check if maximum reconnection attempts reached */
     if (state.reconnectAttempts >= maxReconnectAttempts) {
-      error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      error('----------------------------------------------------');
       error(`Maximum reconnection attempts (${maxReconnectAttempts}) reached.`);
       error('Unable to connect to audio server.');
       error('');
-      error('Please ensure the server is running and listening on:');
+      error('Make sure the server is running and listening on:');
       error(`  tcp://${host}:${port}`);
       error('');
-      error('To restart reconnection attempts, restart the player.');
-      error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      error('To retry the connection, restart the player.');
+      error('----------------------------------------------------');
       return;
     }
 

@@ -105,7 +105,7 @@ function createBackgroundManager(deps) {
    * @returns {{ valid: boolean, resolved?: string, error?: string }}
    */
   function validateBackgroundPath(requestedPath) {
-    /* Empty path resets to solid color */
+    /* Empty path resets to solid colour */
     if (!requestedPath) {
       return { valid: true, resolved: null };
     }
@@ -265,7 +265,7 @@ function createBackgroundManager(deps) {
   }
 
   /**
-   * Initializes background manager
+   * Initialises background manager
    * @returns {string} Current background path
    */
   function initialize() {
@@ -314,7 +314,7 @@ function createBackgroundManager(deps) {
   }
 
   return {
-    /* Initialization */
+    /* Initialisation */
     initialize,
     ensureUploadDir,
 

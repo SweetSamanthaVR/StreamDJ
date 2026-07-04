@@ -3,7 +3,7 @@
 /**
  * Server Constants Module
  *
- * Centralized configuration constants for audio, video encoding,
+ * Centralised configuration constants for audio, video encoding,
  * overlay settings, and operational parameters.
  *
  * @module server/constants

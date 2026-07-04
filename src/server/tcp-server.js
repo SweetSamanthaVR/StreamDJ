@@ -32,6 +32,7 @@ function createTcpServer(deps) {
   let currentProducer = null;
   let pendingSocketResume = null;
   let ingestIdleTimer = null;
+  let statusLogTimer = null;
 
   /* Statistics */
   const ingestStats = {
@@ -194,7 +195,7 @@ function createTcpServer(deps) {
     log(
       `[DEBUG] ${connectionTime} Player connected from ${socket.remoteAddress}:${socket.remotePort}`
     );
-    log(`[DEBUG] Socket options: keepAlive=${socket.bufferSize}, timeout=${socket.timeout}`);
+    log(`[DEBUG] Socket options: bufferSize=${socket.bufferSize}, timeout=${socket.timeout}`);
 
     socket.on('error', (err) => {
       const timestamp = new Date().toISOString();
@@ -263,7 +264,7 @@ function createTcpServer(deps) {
       log(`TCP ingest listening on ${port}`);
 
       /* Periodic status logging */
-      setInterval(() => {
+      statusLogTimer = setInterval(() => {
         const timestamp = new Date().toISOString();
         if (currentProducer && !currentProducer.destroyed) {
           const duration = ingestStats.start ? (Date.now() - ingestStats.start) / 1000 : 0;
@@ -284,6 +285,10 @@ function createTcpServer(deps) {
    */
   function stop() {
     stopIngestIdleWarning();
+    if (statusLogTimer) {
+      clearInterval(statusLogTimer);
+      statusLogTimer = null;
+    }
     if (currentProducer) {
       currentProducer.destroy();
       currentProducer = null;

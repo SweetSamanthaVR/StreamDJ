@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Centralized configuration module
+ * Centralised configuration module
  *
  * Provides shared constants and environment variable loading.
  * Used by server.js, player.js, and webui.ts to ensure consistent

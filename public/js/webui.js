@@ -302,34 +302,25 @@ function applyOverlayCapabilities(snapshot) {
 }
 
 function handleOverlayInputChange(event) {
-  console.log('[DEBUG] handleOverlayInputChange called', event.target);
   if (!overlayStyleState.pending) {
-    console.warn('[DEBUG] overlayStyleState.pending is null, cannot handle change');
     return;
   }
   const input = event.target;
   if (!(input instanceof HTMLInputElement) && !(input instanceof HTMLSelectElement)) {
-    console.warn('[DEBUG] target is not an input or select', input);
     return;
   }
   const path = input.dataset.stylePath;
   if (!path) {
-    console.warn('[DEBUG] input has no data-style-path', input);
     return;
   }
   const value = extractInputValue(input);
-  console.log('[DEBUG] Setting', path, '=', value);
   setValueAtPath(overlayStyleState.pending, path, value);
   overlayStyleState.dirty = true;
   if (elements.overlaySave) elements.overlaySave.disabled = false;
   updateOverlayPreview();
 }
 
-overlayStyleInputs.forEach((input) => {
-  const eventName = input.type === 'range' || input.type === 'color' ? 'input' : 'change';
-  input.addEventListener(eventName, handleOverlayInputChange);
-});
-
+/* Change and input events bubble, so listening on the form covers every field */
 if (elements.overlayForm) {
   elements.overlayForm.addEventListener('change', handleOverlayInputChange);
   elements.overlayForm.addEventListener('input', handleOverlayInputChange);
@@ -340,22 +331,16 @@ if (elements.overlayForm) {
  * ========================================================================== */
 
 async function loadOverlayStyle() {
-  console.log('[DEBUG] loadOverlayStyle called, overlayForm exists:', !!elements.overlayForm);
   if (!elements.overlayForm) return;
   try {
-    console.log('[DEBUG] Fetching /api/overlay/style with headers:', buildApiHeaders());
     const response = await fetch('/api/overlay/style', {
       cache: 'no-store',
       headers: buildApiHeaders(),
     });
-    console.log('[DEBUG] Response status:', response.status);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
-    console.log('[DEBUG] Loaded overlay style (full):', JSON.stringify(data, null, 2));
-    console.log('[DEBUG] data.values:', data.values);
     overlayStyleState.snapshot = data;
     overlayStyleState.pending = cloneDeep(data.values);
-    console.log('[DEBUG] overlayStyleState.pending set to:', overlayStyleState.pending);
     overlayStyleState.dirty = false;
     if (elements.overlaySave) elements.overlaySave.disabled = true;
     applyOverlayCapabilities(data);
@@ -515,8 +500,8 @@ function renderPlaylist(list, currentTrack) {
 
     row.innerHTML = `
         <td>${entry.index + 1}</td>
-        <td style="font-weight:600">${entry.title || entry.filename}</td>
-        <td style="color:var(--text-secondary)">${entry.artist || 'Unknown'}</td>
+        <td style="font-weight:600">${escapeHtml(entry.title || entry.filename)}</td>
+        <td style="color:var(--text-secondary)">${escapeHtml(entry.artist || 'Unknown')}</td>
         <td style="font-family:var(--font-mono); font-size:0.85rem">${formatDuration(entry.duration)}</td>
     `;
     body.appendChild(row);
@@ -1173,7 +1158,7 @@ function handleHashChange() {
 }
 
 /* ==========================================================================
- * Event Listeners & Initialization
+ * Event Listeners & Initialisation
  * ========================================================================== */
 
 /* Player control buttons */
@@ -1266,46 +1251,50 @@ if (elements.uploadForm) {
     if (elements.uploadProgress) elements.uploadProgress.style.display = 'block';
     if (elements.uploadSubmit) elements.uploadSubmit.disabled = true;
 
-    try {
-      const xhr = new XMLHttpRequest();
-
-      xhr.upload.addEventListener('progress', (e) => {
-        if (e.lengthComputable) {
-          const percent = (e.loaded / e.total) * 100;
-          if (elements.uploadProgressBar) elements.uploadProgressBar.style.width = `${percent}%`;
-          if (elements.uploadStatus) elements.uploadStatus.textContent = `${Math.round(percent)}%`;
-        }
-      });
-
-      xhr.addEventListener('load', async () => {
-        if (xhr.status === 201) {
-          showToast('Background uploaded successfully', 'success');
-          if (elements.uploadInput) elements.uploadInput.value = '';
-          if (elements.uploadFilename) elements.uploadFilename.textContent = '';
-          if (elements.uploadProgress) elements.uploadProgress.style.display = 'none';
-          if (elements.uploadProgressBar) elements.uploadProgressBar.style.width = '0%';
-          await loadRecentBackgrounds();
-        } else {
-          const data = JSON.parse(xhr.responseText);
-          throw new Error(data.error || 'Upload failed');
-        }
-      });
-
-      xhr.addEventListener('error', () => {
-        throw new Error('Upload failed');
-      });
-
-      xhr.open('POST', `${CONFIG.serverBase}/api/backgrounds/upload`);
-      if (API_KEY) {
-        xhr.setRequestHeader('Authorization', `Bearer ${API_KEY}`);
-      }
-      xhr.send(formData);
-    } catch (err) {
-      showToast(`Upload error: ${err.message}`, 'error');
+    const failUpload = (message) => {
+      showToast(`Upload error: ${message}`, 'error');
       if (elements.uploadProgress) elements.uploadProgress.style.display = 'none';
-    } finally {
       if (elements.uploadSubmit) elements.uploadSubmit.disabled = false;
+    };
+
+    const xhr = new XMLHttpRequest();
+
+    xhr.upload.addEventListener('progress', (e) => {
+      if (e.lengthComputable) {
+        const percent = (e.loaded / e.total) * 100;
+        if (elements.uploadProgressBar) elements.uploadProgressBar.style.width = `${percent}%`;
+        if (elements.uploadStatus) elements.uploadStatus.textContent = `${Math.round(percent)}%`;
+      }
+    });
+
+    xhr.addEventListener('load', async () => {
+      if (xhr.status === 201) {
+        showToast('Background uploaded', 'success');
+        if (elements.uploadInput) elements.uploadInput.value = '';
+        if (elements.uploadFilename) elements.uploadFilename.textContent = '';
+        if (elements.uploadProgress) elements.uploadProgress.style.display = 'none';
+        if (elements.uploadProgressBar) elements.uploadProgressBar.style.width = '0%';
+        if (elements.uploadSubmit) elements.uploadSubmit.disabled = false;
+        await loadRecentBackgrounds();
+      } else {
+        let message = 'Upload failed';
+        try {
+          const data = JSON.parse(xhr.responseText);
+          if (data.error) message = data.error;
+        } catch {
+          /* Response was not JSON; keep the generic message */
+        }
+        failUpload(message);
+      }
+    });
+
+    xhr.addEventListener('error', () => failUpload('Network error'));
+
+    xhr.open('POST', `${CONFIG.serverBase}/api/backgrounds/upload`);
+    if (API_KEY) {
+      xhr.setRequestHeader('Authorization', `Bearer ${API_KEY}`);
     }
+    xhr.send(formData);
   });
 }
 
@@ -1363,7 +1352,7 @@ const securityBanner = document.getElementById('security-banner');
 const dismissSecurityBanner = document.getElementById('dismiss-security-banner');
 
 /**
- * Initialize security banner state from localStorage
+ * Initialise security banner state from localStorage
  */
 function initSecurityBanner() {
   const dismissed = localStorage.getItem('streamdj-security-banner-dismissed');

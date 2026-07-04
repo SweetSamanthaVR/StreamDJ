@@ -1,110 +1,103 @@
-# StreamDJ HTTP API (Minimal Reference)
+# StreamDJ HTTP API
 
-This document lists the main HTTP endpoints used by StreamDJ. It is intentionally minimal and focuses on the routes exposed by each process.
+A short reference for the HTTP endpoints each StreamDJ process exposes. It sticks to the routes you are likely to call; for anything else, read the route implementations listed at the bottom.
 
 ## Authentication
 
-If `STREAMDJ_API_KEY` is set, all endpoints require a valid API key (except `/health`). Provide one of the following headers:
+If `STREAMDJ_API_KEY` is set, every endpoint except `/health` requires a valid API key. Send it in one of these headers:
 
 - `Authorization: Bearer <api-key>`
 - `X-API-Key: <api-key>`
 
 ## Base URLs (defaults)
 
-- **Server API**: `http://127.0.0.1:4000`
-- **Player API**: `http://127.0.0.1:3000`
-- **Web UI API (proxy)**: `http://127.0.0.1:8080`
+- Server API: `http://127.0.0.1:4000`
+- Player API: `http://127.0.0.1:3000`
+- Web UI API (proxy): `http://127.0.0.1:8080`
 
-Ports and hosts can be changed via `.env` (see [Configuration](../.env.sample)).
-
----
+Ports and hosts can be changed in `.env` (see [.env.sample](../.env.sample)).
 
 ## Server API (stream/encoding service)
 
-**Base URL:** `http://127.0.0.1:4000`
+Base URL: `http://127.0.0.1:4000`
 
 ### Metadata
 
-- `POST /metadata` — Send current track metadata.
+- `POST /metadata` sends the current track metadata.
   - JSON body fields: `title`, `artist`, `album`, `comment`, `filename` (all optional)
 
 ### Backgrounds
 
-- `POST /background` — Change background by path or reset.
-  - JSON body: `{ "path": "relative/or/absolute/path" }` or `{ "path": "" }` to reset
-- `POST /api/backgrounds/upload` — Upload background image/video.
+- `POST /background` changes the background by path, or resets it.
+  - JSON body: `{ "path": "relative/or/absolute/path" }`, or `{ "path": "" }` to reset
+- `POST /api/backgrounds/upload` uploads a background image.
   - `multipart/form-data` field: `background`
-- `GET /api/backgrounds` — List uploaded backgrounds.
-- `DELETE /api/backgrounds/:filename` — Delete uploaded background.
+  - Accepts images only (.png, .jpg, .jpeg, .bmp, .gif, .webp); video backgrounds can be set by path but not uploaded
+- `GET /api/backgrounds` lists uploaded backgrounds.
+- `DELETE /api/backgrounds/:filename` deletes an uploaded background.
 
 ### Overlay style
 
-- `GET /overlay/style` — Get current overlay style.
-- `PUT /overlay/style` — Update overlay style.
-  - JSON body: `values` object (or a flat object of style keys)
+- `GET /overlay/style` returns the current overlay style.
+- `PUT /overlay/style` updates the overlay style.
+  - JSON body: a `values` object (or a flat object of style keys)
   - Optional: `version` for optimistic concurrency
-- `POST /overlay/style/reset` — Reset overlay style to defaults.
+- `POST /overlay/style/reset` resets the overlay style to defaults.
 
-### Status & diagnostics
+### Status and diagnostics
 
-- `GET /health` — Health check (no auth required).
-- `GET /status` — Server status snapshot.
-- `GET /diagnostics` — Full diagnostics snapshot.
-- `GET /diagnostics/logs?level=DEBUG&limit=1000` — Diagnostic logs.
-- `GET /diagnostics/events?type=&limit=100` — Diagnostic events.
-- `GET /diagnostics/restarts?limit=50` — Restart history.
-- `GET /diagnostics/export` — Export diagnostics as JSON download.
-- `POST /diagnostics/clear` — Clear diagnostics buffers.
+- `GET /health` is the health check (no auth required).
+- `GET /status` returns a server status snapshot.
+- `GET /diagnostics` returns the full diagnostics snapshot.
+- `GET /diagnostics/logs?level=DEBUG&limit=1000` returns diagnostic logs.
+- `GET /diagnostics/events?type=&limit=100` returns diagnostic events.
+- `GET /diagnostics/restarts?limit=50` returns the restart history.
+- `GET /diagnostics/export` downloads the diagnostics bundle as JSON.
+- `POST /diagnostics/clear` clears the diagnostics buffers.
 
 ### FFmpeg controls
 
-- `POST /ffmpeg/unblock` — Manually unblock FFmpeg if blocked.
-
----
+- `POST /ffmpeg/unblock` manually unblocks FFmpeg after a crash loop.
 
 ## Player API (playback service)
 
-**Base URL:** `http://127.0.0.1:3000`
+Base URL: `http://127.0.0.1:3000`
 
 ### Playback controls
 
-- `GET|POST /next` — Skip to next track.
-- `GET|POST /previous` — Skip to previous track.
-- `GET|POST /pause` — Pause playback.
-- `GET|POST /resume` — Resume playback.
+- `GET|POST /next` skips to the next track.
+- `GET|POST /previous` skips to the previous track.
+- `GET|POST /pause` pauses playback.
+- `GET|POST /resume` resumes playback.
 
 ### Status
 
-- `GET /health` — Health check (no auth required).
-- `GET /current` — Current track + playback status.
-- `GET /playlist` — Full playlist.
+- `GET /health` is the health check (no auth required).
+- `GET /current` returns the current track and playback status.
+- `GET /playlist` returns the full playlist.
 
----
+## Web UI API (proxy and UI state)
 
-## Web UI API (proxy + UI state)
+Base URL: `http://127.0.0.1:8080`
 
-**Base URL:** `http://127.0.0.1:8080`
+The web UI exposes a proxy API that forwards requests to the server and player APIs. Handy if you only want to talk to a single port.
 
-The Web UI exposes a proxy API that forwards requests to the server/player APIs. Useful if you only want to access a single port.
+- `GET /api/state` returns the combined state (player current, playlist, server status).
+- `POST /api/player/:action` proxies player actions (`next`, `previous`, `pause`, `resume`).
+- `POST /api/background` proxies a background change.
+- `GET /api/overlay/style` proxies the overlay style fetch.
+- `PUT /api/overlay/style` proxies an overlay style update.
+- `POST /api/overlay/style/reset` proxies an overlay style reset.
+- `GET /api/diagnostics` proxies the diagnostics snapshot.
+- `GET /api/diagnostics/logs` proxies diagnostic logs.
+- `GET /api/diagnostics/events` proxies diagnostic events.
+- `GET /api/diagnostics/restarts` proxies the restart history.
+- `GET /api/diagnostics/export` proxies the diagnostics export.
+- `POST /api/diagnostics/clear` proxies the diagnostics clear.
 
-- `GET /api/state` — Combined state (player current, playlist, server status).
-- `POST /api/player/:action` — Proxy player actions (`next`, `previous`, `pause`, `resume`).
-- `POST /api/background` — Proxy background change.
-- `GET /api/overlay/style` — Proxy overlay style fetch.
-- `PUT /api/overlay/style` — Proxy overlay style update.
-- `POST /api/overlay/style/reset` — Proxy overlay style reset.
-- `GET /api/diagnostics` — Proxy diagnostics snapshot.
-- `GET /api/diagnostics/logs` — Proxy diagnostic logs.
-- `GET /api/diagnostics/events` — Proxy diagnostic events.
-- `GET /api/diagnostics/restarts` — Proxy restart history.
-- `GET /api/diagnostics/export` — Proxy diagnostics export.
-- `POST /api/diagnostics/clear` — Proxy diagnostics clear.
+## Where the routes live
 
----
-
-## Source of Truth
-
-If you need more detail, see the route implementations:
+If you need more detail, read the route implementations:
 
 - Server routes: `src/server/http-routes.js`
 - Player routes: `src/player/http-api.js`

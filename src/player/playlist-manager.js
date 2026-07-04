@@ -18,6 +18,33 @@ const { ignoreErrors } = require('../lib/utils/errors');
 
 const { log, warn, error } = createLogger('playlist');
 
+/*
+ * Audio formats the player accepts. Decoding is done by FFmpeg (which handles
+ * all of these and more) and tags are read by music-metadata, so a format
+ * belongs here only if both can deal with it.
+ */
+const SUPPORTED_AUDIO_EXTENSIONS = new Set([
+  '.mp3',
+  '.flac',
+  '.ogg',
+  '.opus',
+  '.m4a',
+  '.aac',
+  '.wav',
+  '.wma',
+  '.aiff',
+  '.aif',
+]);
+
+/**
+ * Checks whether a file has a supported audio extension
+ * @param {string} filePath - Path to check
+ * @returns {boolean} True if the extension is supported
+ */
+function isSupportedAudioFile(filePath) {
+  return SUPPORTED_AUDIO_EXTENSIONS.has(path.extname(filePath).toLowerCase());
+}
+
 /**
  * @typedef {Object} TrackMetadata
  * @property {string} title - Track title
@@ -188,14 +215,14 @@ function createPlaylistManager(options) {
   }
 
   /**
-   * Loads all MP3 files from the music directory into the playlist
+   * Loads all supported audio files from the music directory into the playlist
    * @returns {Promise<void>} Resolves when all tracks are loaded
    */
   async function loadInitialPlaylist() {
     let successCount = 0;
     let errorCount = 0;
     for await (const fullPath of walkDirectory(musicDir)) {
-      if (!fullPath.toLowerCase().endsWith('.mp3')) {
+      if (!isSupportedAudioFile(fullPath)) {
         continue;
       }
       if (state.trackMap.has(fullPath)) {
@@ -226,7 +253,7 @@ function createPlaylistManager(options) {
    * @returns {Promise<void>} Resolves when the track is added
    */
   async function handleNewTrack(fullPath) {
-    if (!fullPath.toLowerCase().endsWith('.mp3')) {
+    if (!isSupportedAudioFile(fullPath)) {
       return;
     }
     if (state.trackMap.has(fullPath)) {
@@ -249,11 +276,12 @@ function createPlaylistManager(options) {
   }
 
   /**
-   * Watches the music directory for new MP3 files and adds them to the playlist
+   * Watches the music directory for new audio files and adds them to the
+   * playlist. Chokidar v4 dropped glob support, so the whole directory is
+   * watched and handleNewTrack filters by extension.
    */
   function watchMusicDirectory() {
-    watcher = chokidar.watch('**/*.mp3', {
-      cwd: musicDir,
+    watcher = chokidar.watch(musicDir, {
       persistent: true,
       ignoreInitial: true,
       awaitWriteFinish: {
@@ -262,8 +290,8 @@ function createPlaylistManager(options) {
       },
     });
 
-    watcher.on('add', (relativePath) => {
-      const fullPath = path.join(musicDir, relativePath);
+    watcher.on('add', (watchedPath) => {
+      const fullPath = path.resolve(musicDir, watchedPath);
       ignoreErrors(handleNewTrack(fullPath), error, 'Failed to add new track');
     });
 
@@ -360,7 +388,7 @@ function createPlaylistManager(options) {
   }
 
   return {
-    /* Initialization */
+    /* Initialisation */
     ensureMusicDir,
     loadInitialPlaylist,
     watchMusicDirectory,

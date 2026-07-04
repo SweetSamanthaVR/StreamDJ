@@ -1,6 +1,6 @@
 # StreamDJ
 
-A local toolkit for running an unattended music stream: it scans a folder of MP3s, decodes and pipes the audio to FFmpeg with a live text overlay burnt in, and gives you a web UI to control playback and watch the stream's health.
+A local toolkit for running an unattended music stream: it scans a folder of music, decodes and pipes the audio to FFmpeg with a live text overlay burnt in, and gives you a web UI to control playback and watch the stream's health.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
@@ -8,11 +8,11 @@ A local toolkit for running an unattended music stream: it scans a folder of MP3
 
 ## What it does
 
-- Scans your music library and pulls metadata out of the MP3 tags
+- Scans your music library (MP3, FLAC, Ogg, Opus, M4A/AAC, WAV, WMA, AIFF) and pulls metadata out of the tags
 - Shuffles playback, with next/previous/pause/resume from the control panel
 - Streams decoded audio from the player to the server over a local TCP socket
 - Encodes with FFmpeg and burns a configurable text overlay into the video
-- Lets you swap backgrounds (image or video) and upload new ones on the fly
+- Lets you swap backgrounds (image or video) and upload new images on the fly
 - Ships a web UI with live status, the playlist, and an overlay style editor
 - Exposes health and diagnostics endpoints so you can keep an eye on it
 - Restarts FFmpeg itself with backoff if it falls over
@@ -53,7 +53,7 @@ You'll need FFmpeg on your PATH before any of this works.
 
 ## The pieces
 
-- **Player** (`player.js`): scans the library, decodes MP3s, exposes playback control over HTTP
+- **Player** (`player.js`): scans the library, decodes the audio, exposes playback control over HTTP
 - **Server** (`server.js`): takes audio over TCP, runs it through FFmpeg, pushes it out to RTMP
 - **Web UI** (`webui.ts`): the control panel, proxying a limited set of actions through to the other two
 
@@ -62,10 +62,10 @@ You'll need FFmpeg on your PATH before any of this works.
 ### Everything binds to localhost by default
 
 | Service    | Default host | Override          |
-| ---------- | ------------ | ------------------ |
-| Server API | 127.0.0.1    | `HTTP_HOST`         |
-| Player API | 127.0.0.1    | `PLAYER_API_HOST`   |
-| Web UI     | 127.0.0.1    | `WEBUI_HOST`         |
+| ---------- | ------------ | ----------------- |
+| Server API | 127.0.0.1    | `HTTP_HOST`       |
+| Player API | 127.0.0.1    | `PLAYER_API_HOST` |
+| Web UI     | 127.0.0.1    | `WEBUI_HOST`      |
 
 If you want any of it reachable from the network, set the relevant host to `0.0.0.0` in `.env`:
 
@@ -127,6 +127,8 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 `/health` is always open, regardless of auth, so monitoring tools can poll it.
 
+One thing to be aware of: the web UI page embeds the API key so the browser can talk to the server directly (uploads, background switching). If you set an API key and expose the web UI beyond localhost, set a password as well; otherwise anyone who can load the page can read the key out of the page source.
+
 ## Worth knowing before you rely on this
 
 - Auth is off unless you turn it on, do that before exposing anything to a network
@@ -139,12 +141,12 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 ## Ports
 
-| Component       | Port | Protocol | Purpose                                   |
+| Component        | Port | Protocol | Purpose                                    |
 | ---------------- | ---- | -------- | ------------------------------------------ |
-| Player → Server  | 5000 | TCP      | Audio handed off from player to server      |
-| Server HTTP      | 4000 | HTTP     | Metadata, backgrounds, status, diagnostics  |
-| Player HTTP      | 3000 | HTTP     | Playback control, playlist                  |
-| Web UI           | 8080 | HTTP     | The control panel                           |
+| Player to server | 5000 | TCP      | Audio handed off from player to server     |
+| Server HTTP      | 4000 | HTTP     | Metadata, backgrounds, status, diagnostics |
+| Player HTTP      | 3000 | HTTP     | Playback control, playlist                 |
+| Web UI           | 8080 | HTTP     | The control panel                          |
 
 ## Layout
 
@@ -157,24 +159,24 @@ StreamDJ/
 │   ├── server/                  # server submodules
 │   │   ├── background-manager.js
 │   │   ├── ffmpeg-manager.js
-│   │   ├── http-api.js
+│   │   ├── http-routes.js
 │   │   └── ...
 │   └── player/                  # player submodules
 │       ├── audio-socket.js
 │       ├── http-api.js
-│       ├── music-scanner.js
+│       ├── playlist-manager.js
 │       └── ...
 ├── webui.ts                    # web UI server (TypeScript)
 ├── dist/                       # compiled web UI (generated)
 ├── config/                     # default overlay config
 ├── data/                       # runtime data (gitignored)
+├── docs/                       # API reference
 ├── views/                      # EJS templates
 ├── media/
 │   ├── stream-backgrounds/     # background assets
 │   └── music/                  # your music (gitignored)
 ├── types/                      # TypeScript definitions
 ├── .env.sample
-├── CONTRIBUTING.md
 ├── LICENSE
 └── README.md
 ```
@@ -212,14 +214,7 @@ Node (CommonJS) on the server side, Express and Helmet, EJS for templates, FFmpe
 
 ## Contributing
 
-Pull requests welcome. Fork it, branch off, make your change, test it properly, and send it over. See [CONTRIBUTING.md](CONTRIBUTING.md) for the details.
-
-## Issues
-
-Found a bug or want to suggest something? Open an issue or start a discussion:
-
-- https://github.com/SweetSamanthaVR/StreamDJ/issues
-- https://github.com/SweetSamanthaVR/StreamDJ/discussions
+Pull requests welcome. Fork it, branch off, make your change, test it properly with all three processes running, and send it over. Run `npm run lint` and `npm run format` before you commit, and stick to conventional commit messages (`feat:`, `fix:`, `docs:` and so on).
 
 ## Licence
 
@@ -228,7 +223,3 @@ MIT, see [LICENSE](LICENSE).
 ## Disclaimer
 
 You're responsible for installing and keeping FFmpeg up to date, for securing your own RTMP endpoint and stream key, for switching on authentication if you expose this beyond your own machine, and for staying on the right side of copyright and your streaming service's terms. StreamDJ isn't affiliated with or endorsed by any streaming platform.
-
----
-
-**Version:** 1.0.0

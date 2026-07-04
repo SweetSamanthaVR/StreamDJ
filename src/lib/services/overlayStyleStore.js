@@ -91,7 +91,7 @@ function clamp(value, min, max) {
 
 function sanitizeColor(value, field) {
   if (typeof value !== 'string' || !COLOR_PATTERN.test(value.trim())) {
-    throw new Error(`${field} must be a hex color in the form #RRGGBB`);
+    throw new Error(`${field} must be a hex colour in the form #RRGGBB`);
   }
   return value.trim().toUpperCase();
 }

@@ -7,7 +7,7 @@
  * with real-time text overlay, and outputs to an RTMP endpoint. Provides
  * an HTTP API for metadata updates, background switching, and status monitoring.
  *
- * This module serves as the main orchestrator that initializes and coordinates
+ * This module serves as the main orchestrator that initialises and coordinates
  * all server submodules.
  *
  * @module server
@@ -75,7 +75,7 @@ const ALLOWED_BACKGROUND_DIRS = process.env.ALLOWED_BACKGROUND_DIRS
   : [PROJECT_ROOT];
 
 /*
- * Initialize Overlay Style Defaults
+ * Initialise Overlay Style Defaults
  */
 
 if (!hasOverlayStylePersisted()) {
@@ -120,15 +120,15 @@ function createDefaultMetadata() {
     title: 'StreamDJ Live',
     artist: 'StreamDJ',
     album: 'Live Mix',
-    comment: 'Waiting for tracks…',
+    comment: 'Waiting for tracks...',
   };
 }
 
 /**
- * Sanitizes a metadata field
- * @param {any} value - Value to sanitize
+ * Sanitises a metadata field
+ * @param {any} value - Value to sanitise
  * @param {string} fallback - Fallback value
- * @returns {string} Sanitized string
+ * @returns {string} Sanitised string
  */
 function sanitizeMetadataField(value, fallback) {
   if (value === null || value === undefined) {
@@ -160,10 +160,10 @@ function formatDuration(seconds) {
 }
 
 /**
- * Normalizes raw metadata from player
+ * Normalises raw metadata from player
  * @param {Object} meta - Raw metadata
  * @param {number} positionSeconds - Current position
- * @returns {Object} Normalized metadata
+ * @returns {Object} Normalised metadata
  */
 function normalizeMetadata(meta = {}, positionSeconds = 0) {
   const durationDisplay = formatDuration(meta.duration);
@@ -190,8 +190,8 @@ function normalizeMetadata(meta = {}, positionSeconds = 0) {
 }
 
 /**
- * Gets current normalized metadata
- * @returns {Object} Normalized metadata
+ * Gets current normalised metadata
+ * @returns {Object} Normalised metadata
  */
 function currentNormalizedMetadata() {
   const raw = (lastMetadata && lastMetadata.original) || desiredMetadata || {};
@@ -252,7 +252,7 @@ async function detectDrawtextLetterSpacingSupport() {
 }
 
 /*
- * Initialize Submodules
+ * Initialise Submodules
  */
 
 /* Background Manager */
@@ -272,7 +272,7 @@ const overlayRenderer = createOverlayRenderer({
   log,
   warn,
   getOverlayStyle: () => currentOverlayStyle,
-  ffmpegSupportsLetterSpacing,
+  getLetterSpacingSupport: () => ffmpegSupportsLetterSpacing,
 });
 
 /* Silence Generator (will be configured after ffmpegManager) */
@@ -347,12 +347,13 @@ app.use(
 );
 
 /* CORS middleware */
+const WEBUI_PORT = optionalEnv('WEBUI_PORT', '8080');
 app.use((req, res, next) => {
   const allowedOrigins = [
     `http://127.0.0.1:${PLAYER_API_PORT}`,
     `http://localhost:${PLAYER_API_PORT}`,
-    'http://127.0.0.1:8080',
-    'http://localhost:8080',
+    `http://127.0.0.1:${WEBUI_PORT}`,
+    `http://localhost:${WEBUI_PORT}`,
   ];
   const origin = req.headers.origin;
   if (origin && allowedOrigins.includes(origin)) {
@@ -398,6 +399,9 @@ function shutdown(reason = 'manual') {
       log('Shutdown complete');
       process.exit(0);
     });
+  } else {
+    log('Shutdown complete');
+    process.exit(0);
   }
 
   setTimeout(() => {
@@ -432,7 +436,7 @@ async function startServer() {
     process.exit(1);
   }
 
-  log('FFmpeg validation passed ✓');
+  log('FFmpeg validation passed');
 
   ffmpegSupportsLetterSpacing = await detectDrawtextLetterSpacingSupport();
   if (ffmpegSupportsLetterSpacing) {
@@ -441,7 +445,7 @@ async function startServer() {
     warn('[ffmpeg] drawtext letter_spacing not supported');
   }
 
-  /* Initialize overlay file */
+  /* Initialise overlay file */
   await overlayRenderer.ensureOverlayFile(createDefaultMetadata());
 
   /* Create FFmpeg Manager */
@@ -564,7 +568,7 @@ async function startServer() {
     onBackgroundChange: (newBackground) => {
       const reason = newBackground
         ? 'background change'
-        : 'background change (reset to solid color)';
+        : 'background change (reset to solid colour)';
 
       if (ffmpegManager.isRunning()) {
         if (tcpServer) tcpServer.pauseProducer(reason);

@@ -3,7 +3,7 @@
 /**
  * StreamDJ Diagnostics Module
  *
- * Provides centralized diagnostic logging, event tracking, and telemetry
+ * Provides centralised diagnostic logging, event tracking, and telemetry
  * for debugging stream restarts and performance issues.
  *
  * @module diagnostics

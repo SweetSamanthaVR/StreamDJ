@@ -3,7 +3,7 @@
 /*
  * Simple logger utility
  *
- * Behavior:
+ * Behaviour:
  *  - Adds an ISO timestamp and log level to each line
  *  - Adds an optional scope prefix when createLogger(scope) is used
  *  - Supports JSON output when LOG_FORMAT=json e.g. { timestamp, level, scope, message }
